@@ -1,0 +1,9 @@
+// NUEVO CÓDIGO IMPLEMENTADO
+  "server": {
+    "url": "https://appexdigitalrep.github.io/NEXO/public/",
+    "cleartext": true,
+    "allowNavigation": [
+      "*.github.io",
+      "github.com"
+    ]
+  }
