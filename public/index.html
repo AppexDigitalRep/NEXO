@@ -74,7 +74,7 @@
         .mobile-nav {
             display: none;
             position: absolute;
-            bottom: 85px; /* Desplazado al tercio inferior para liberar el centro */
+            bottom: 85px; 
             top: auto;
             left: 0;
             width: 100%;
@@ -121,7 +121,7 @@
 
         @media (max-width: 768px) {
             #preloader {
-                background-position: center center; /* Centrado puro y absoluto */
+                background-position: center center; 
             }
 
             .sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); z-index: 150;}
@@ -133,7 +133,7 @@
                 backdrop-filter: none;
                 border: none;
                 box-shadow: none;
-                padding-bottom: 140px; /* Evita colisión con controles y nuevas flechas */
+                padding-bottom: 140px; 
             }
             
             .mobile-nav { display: flex; }
@@ -247,7 +247,7 @@
             { name: "PULPO (HE'E)", culture: "Polinesia", skill: "Atención Multifocal y Flexibilidad.", color: "#9370DB", hardware: "Sexto sentido táctil en las manos / Sistema nervioso extendido.", analysis: "La capacidad de sostener múltiples universos a la vez sin colapsar. Equilibra tus viajes, tus relaciones, tu salud, tus colecciones y tus proyectos empresariales, dándole a cada uno la atención fluida e inteligente que requiere.", boot: "Abre y cierra las manos soltando el control rígido. Visualiza ocho corrientes de luz púrpura extendiéndose y adaptándose suavemente a cada área de tu vida, manteniendo todo en perfecto equilibrio.", mantra: "Fluidez total. Abrazo y sostengo todas las dimensiones de mi vida en perfecta paz." },
             { name: "LAMASSU", culture: "Mesopotamia", skill: "Cimiento Inquebrantable de la Razón.", color: "#F0E68C", hardware: "Hombros / Pies (Base de soporte absoluto).", analysis: "El búnker del imperio personal. Te otorga la claridad lógica, financiera y legal para establecer las bases de tus empresas y tu vida formal. Es la estabilidad que te permite construir tan alto como quieras sin temor a caer.", boot: "Deja caer el peso muerto de tus hombros. Visualiza cuatro inmensos pilares dorados de razón y orden anclándote al centro de la tierra. Siente cómo tu estructura soporta cualquier peso.", mantra: "Mis bases son de oro puro. Mi mente es un imperio inamovible de claridad." },
             { name: "SEMARGL", culture: "Eslava", skill: "Purificación Ambiental y Fuego Sagrado.", color: "#FF2400", hardware: "Aura / Campo magnético a 5cm de tu piel.", analysis: "El humo del palo santo y la limpieza del aura. Se activa para transmutar energías ambientales densas, envidias, accidentes energéticos o discusiones, devolviendo el equilibrio a tu habitación, a tu altar y a tu campo áurico.", boot: "Siente la temperatura de tu piel. Visualiza un aura de llamas rojas y translúcidas rodeándote por completo. Observa cómo todo el estrés y la carga del mundo externo se vuelven cenizas al tocar tu perímetro.", mantra: "Mi fuego transmuta toda densidad. Mi entorno respira limpio; la energía divina fluye." },
-            { name: "LEÓN DE LAS NIEVES (SENGGE)", culture: "Tibetana", skill: "Ecuanimidad Pura y el Juego de la Creación.", color: "#F0F8FF", hardware: "Garganta / Cerebelo (Base del cráneo).", analysis: "La maestría de vivir sin miedo al fracaso. Reconocer que explorar el mundo, amar, cocinar, programar y coleccionar no son obligaciones, sino la forma en que el universo juega y se divierte a través de ti.", boot: "Esboza una genuina sonrisa física. Libera por completo la tensión del cuello y la mandíbula. Siente una luz blanca, juguetona y brillante disolviendo la 'seriedad' de la vida y llenándote de libertad total.", mantra: "La vida es mi terreno de juego. Creo, exploro y existo desde la más pura y alegre libertad." }
+            { name: "LEÓN NIEVES (SENGGE)", culture: "Tibetana", skill: "Ecuanimidad Brillante", color: "#F0F8FF", hardware: "Garganta / Cerebelo (Base del cráneo).", analysis: "La maestría de vivir sin miedo al fracaso. Reconocer que explorar el mundo, amar, cocinar, programar y coleccionar no son obligaciones, sino la forma en que el universo juega y se divierte a través de ti.", boot: "Esboza una genuina sonrisa física. Libera por completo la tensión del cuello y la mandíbula. Siente una luz blanca, juguetona y brillante disolviendo la 'seriedad' de la vida y llenándote de libertad total.", mantra: "La vida es mi terreno de juego. Creo, exploro y existo desde la más pura y alegre libertad." }
         ];
 
         let scene, camera, renderer, labelRenderer, controls, raycaster, mouse;
@@ -255,6 +255,12 @@
         let isAutoRotating = true;
         let activeLayerGroups = [];
         let currentSkinIndex = -1;
+        let currentUtterance = null; // Variable global para proteger TTS en Android WebView
+
+        // Pre-calentamiento del motor de voz para WebView Android
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+        }
 
         function init() {
             scene = new THREE.Scene();
@@ -389,39 +395,45 @@
 
         function toggleSpeech() {
             if (currentSkinIndex === -1) return;
-            const synth = window.speechSynthesis;
             const btn = document.getElementById('tts-btn');
-            
-            if (synth.speaking) {
-                synth.cancel();
-                btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
-            } else {
-                const skin = SKINS[currentSkinIndex];
-                const textToRead = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}.
-                    Habilidad principal: ${skin.skill}.
-                    Punto de enfoque físico: ${skin.hardware}.
-                    Análisis táctico: ${skin.analysis}
-                    Instrucción de Booteo: ${skin.boot}
-                    Mantra de ejecución: ${skin.mantra}`;
-                
-                const utterance = new SpeechSynthesisUtterance(textToRead);
-                utterance.lang = 'es-ES';
-                
-                // Calibración acústica para paz y profundidad
-                utterance.rate = 0.85; // Flujo pausado
-                utterance.pitch = 0.6; // Frecuencia grave
 
-                // Filtro para priorizar voces masculinas/profundas si están instaladas en el SO
-                const voices = synth.getVoices();
-                const esVoices = voices.filter(v => v.lang.startsWith('es'));
-                const preferredVoice = esVoices.find(v => v.name.toLowerCase().includes('male') || v.name.includes('Google')) || esVoices[0];
-                if (preferredVoice) {
-                    utterance.voice = preferredVoice;
+            // Blindaje de compatibilidad para Android WebView
+            if (!('speechSynthesis' in window)) {
+                btn.innerHTML = '>[ERROR] MOTOR DE VOZ NO DETECTADO';
+                return;
+            }
+
+            const synth = window.speechSynthesis;
+            
+            try {
+                if (synth.speaking) {
+                    synth.cancel();
+                    btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+                } else {
+                    const skin = SKINS[currentSkinIndex];
+                    const textToRead = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}. Habilidad principal: ${skin.skill}. Punto de enfoque físico: ${skin.hardware}. Análisis táctico: ${skin.analysis} Instrucción de Booteo: ${skin.boot} Mantra de ejecución: ${skin.mantra}`;
+                    
+                    // Asignación a variable global para evadir Garbage Collection en WebView
+                    currentUtterance = new SpeechSynthesisUtterance(textToRead);
+                    currentUtterance.lang = 'es-ES';
+                    currentUtterance.rate = 0.85; 
+                    currentUtterance.pitch = 0.6; 
+
+                    const voices = synth.getVoices();
+                    const esVoices = voices.filter(v => v.lang.startsWith('es'));
+                    const preferredVoice = esVoices.find(v => v.name.toLowerCase().includes('male') || v.name.includes('Google')) || esVoices[0];
+                    if (preferredVoice) {
+                        currentUtterance.voice = preferredVoice;
+                    }
+                    
+                    currentUtterance.onend = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
+                    currentUtterance.onerror = (e) => { console.warn("TTS Error:", e); btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
+                    
+                    synth.speak(currentUtterance);
+                    btn.innerHTML = '&#9632; DETENER REPRODUCCIÓN';
                 }
-                
-                utterance.onend = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
-                synth.speak(utterance);
-                btn.innerHTML = '&#9632; DETENER REPRODUCCIÓN';
+            } catch(e) {
+                console.error("Fallo crítico en TTS:", e);
             }
         }
 
@@ -433,8 +445,10 @@
 
             if(isMobile) document.getElementById('sidebar').classList.remove('active');
 
-            // Detener Audio si se cambia de nodo
-            window.speechSynthesis.cancel();
+            // Detener Audio si se cambia de nodo con Blindaje Try-Catch
+            try {
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            } catch(e) { console.warn("TTS Cancel Ignored", e); }
             document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
 
             nodes.forEach((n, i) => {
@@ -466,7 +480,6 @@
             document.getElementById('node-culture').innerText = target.data.culture;
             document.getElementById('node-skill').innerText = target.data.skill;
             
-            // Inyección de HTML estructurado hiper-técnico para el panel descriptivo
             const descHtml = `
                 <div style="margin-bottom: 10px;"><span style="color: var(--neon-orange); font-size: 9px;">>_HARDWARE_TARGET:</span> <span style="color: #fff;">${target.data.hardware}</span></div>
                 <div style="margin-bottom: 10px;"><span style="color: var(--neon-orange); font-size: 9px;">>_ANÁLISIS:</span> <span style="color: #ccc;">${target.data.analysis}</span></div>
@@ -478,7 +491,10 @@
         }
 
         function resetView() {
-            window.speechSynthesis.cancel();
+            // Blindaje Try-Catch
+            try {
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            } catch(e) {}
             document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
 
             isAutoRotating = true;
