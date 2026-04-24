@@ -1,0 +1,23 @@
+{
+  "name": "nexus-core",
+  "version": "1.0.0",
+  "description": "Centro de Mando Operativo",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Appex Arquitecto Digital",
+  "license": "ISC",
+  "dependencies": {
+    "google-auth-library": "^9.0.0",
+    "google-spreadsheet": "4.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/local-notifications": "^6.0.0",
+    "@capacitor/assets": "^3.0.4",
+    "@capacitor/app-launcher": "^6.0.0"
+  }
+}
