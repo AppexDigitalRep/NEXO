@@ -24,7 +24,6 @@
             inset: 0;
             z-index: 2000;
             background-color: #000;
-            /* Configuración de imagen con zoom automático para móvil */
             background-image: url('imagenes/fondo.png'); 
             background-size: cover;
             background-position: center;
@@ -61,7 +60,7 @@
         }
 
         .detail-panel { 
-            width: 300px; 
+            width: 320px; 
             padding: 25px; 
             transform: translateX(100%); 
             z-index: 120;
@@ -101,7 +100,28 @@
             transition: all 0.2s ease;
         }
 
+        /* Reproductor TTS Botón */
+        #tts-btn {
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 8px;
+            text-align: center;
+            font-family: 'Orbitron';
+            font-size: 9px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        #tts-btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 10px var(--neon-blue); }
+
         @media (max-width: 768px) {
+            #preloader {
+                background-position: 65% center; /* Ajuste Táctico: Mueve la imagen a la derecha en móvil */
+            }
+
             .sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); z-index: 150;}
             .sidebar.active { transform: translateX(0); }
             
@@ -111,12 +131,14 @@
                 backdrop-filter: none;
                 border: none;
                 box-shadow: none;
+                padding-bottom: 90px; /* Evita que el texto colisione con controles */
             }
             
             .mobile-nav { display: flex; }
 
-            .detail-panel h1, .detail-panel p, .detail-panel label, .detail-panel .close-btn {
-                text-shadow: 2px 2px 4px #000, -2px -2px 4px #000, 0px 0px 10px #000;
+            /* Blindaje de texto oscuro sobre 3D con Sombras Extremas */
+            .detail-panel h1, .detail-panel p, .detail-panel label, .detail-panel .close-btn, .detail-panel span, .detail-panel div {
+                text-shadow: 2px 2px 4px #000, -2px -2px 4px #000, 0px 0px 10px #000, 0px 0px 15px rgba(0,0,0,0.8) !important;
             }
 
             .controls { z-index: 140; }
@@ -173,15 +195,15 @@
             <div style="display: flex; flex-direction: column; flex-grow: 1; height: 100%;">
                 <div>
                     <h1 id="node-name" style="font-size: 20px; font-family: 'Orbitron'; margin: 0; color: var(--neon-blue);">NAME</h1>
-                    <p id="node-culture" style="color: var(--neon-purple); font-size: 11px; margin: 0 0 25px 0;">CULTURA</p>
+                    <p id="node-culture" style="color: var(--neon-purple); font-size: 11px; margin: 0 0 10px 0;">CULTURA</p>
+                    <div id="tts-btn" onclick="toggleSpeech()">&#9658; INICIAR REPRODUCCIÓN</div>
                 </div>
                 
-                <div style="margin-top: auto; padding-bottom: 70px;">
+                <div style="margin-top: auto; padding-bottom: 20px;">
                     <label style="color: var(--neon-blue); font-size: 9px; letter-spacing: 1px;">MODO_ACTIVO</label>
-                    <p id="node-skill" style="font-size: 14px; margin: 5px 0 20px 0; color: #fff;"></p>
+                    <p id="node-skill" style="font-size: 13px; margin: 5px 0 15px 0; color: #fff;"></p>
                     
-                    <label style="color: var(--neon-blue); font-size: 9px; letter-spacing: 1px;">ANÁLISIS_FRACTAL</label>
-                    <p id="node-desc" style="font-size: 12px; color: #ccc; line-height: 1.6; margin: 5px 0 0 0;"></p>
+                    <div id="node-desc" style="font-size: 11px; color: #ccc; line-height: 1.5; margin: 5px 0 0 0;"></div>
                 </div>
             </div>
         </div>
@@ -200,25 +222,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
     <script>
+        // BASE DE DATOS INYECTADA V2.0
         const SKINS = [
-            { name: "ÁGUILA (TZ'IKIN)", culture: "CULTURA MAYA | Coronilla", skill: "Orquestación de Alto Nivel", color: "#FFD700", desc: "El intermediario entre el cielo y la tierra. Posee la visión panorámica del sistema completo. Se activa cuando diseñas la arquitectura de un proyecto, permitiendo ver el 'todo' y detectar abundancia antes de programar. Conexión con el Hanan Pacha." },
-            { name: "CERDO DE MADERA", culture: "CULTURA CHINA (1995) | Corazón", skill: "Generador de Ayni", color: "#8B4513", desc: "Honestidad radical, generosidad y crecimiento orgánico. Se activa en momentos de intercambio y flujo de dinero. Asegura crecimiento constante y relaciones nutridas." },
-            { name: "CANGREJO (CÁNCER)", culture: "ZODIACO OCCIDENTAL | Caparazón", skill: "Firewall Emocional", color: "#FF4500", desc: "Guardián de las aguas internas. Armadura rígida que protege un núcleo creativo. Sistema de seguridad perimetral para blindar la paz mental de influencias densas." },
-            { name: "PÁJARO CARPINTERO", culture: "NATIVA AMERICANA | Eje Frontal", skill: "Persistencia de Código", color: "#FF0000", desc: "Constructor rítmico. Se activa durante largas jornadas técnicas, otorgando disciplina para picar código con ritmo perfecto. Avanza en horas lo que a otros toma semanas." },
-            { name: "GATO", culture: "CULTURA CELTA | Percepción Sensorial", skill: "Sensor de Anomalías", color: "#00FF7F", desc: "Guardián de lo invisible. Detecta 'bugs' o malas vibras antes de manifestarse. Permite moverse por entornos complejos o código legado con sigilo y elegancia, sin ensuciar la energía." },
-            { name: "ANUBIS (CHACAL)", culture: "CULTURA EGIPCIA | Nivel Superior", skill: "Administrador de Transiciones", color: "#C0C0C0", desc: "El embalsamador que domina el paso entre realidades. Activo al pasar del mundo físico al digital o vigilia a sueño. Asegura un 'login' y 'logout' seguro en cada realidad." },
-            { name: "SERPIENTE (ASHLESHA)", culture: "ASTROLOGÍA VÉDICA | Médula Ósea", skill: "Lógica de Bajo Nivel", color: "#32CD32", desc: "Energía Kundalini y conocimiento profundo. Conexión con el hardware biológico para procesos de sanación física y entrada a niveles lógicos de alta complejidad." },
-            { name: "BÚHO (MIQUIZTLI)", culture: "CULTURA AZTECA | Vuelo Silencioso", skill: "Refactorización Total", color: "#4B0082", desc: "La transformación profunda. El poder de 'borrar el archivo' y dejar morir lo obsoleto para que el sistema se actualice. Transmuta el dolor en sabiduría técnica." },
-            { name: "URO (TORO SALVAJE)", culture: "CULTURA NÓRDICA | Músculos", skill: "Desempeño de Alto Rendimiento", color: "#A52A2A", desc: "Potencia bruta y resistencia inagotable. Activo en crisis físicas o esfuerzo extremo. Nada te detiene cuando esta skin toma el mando." },
-            { name: "LAGARTO", culture: "ABORÍGEN AUSTRALIANA | Palabra", skill: "Navegador de Realidades", color: "#FF8C00", desc: "Maestro de la paciencia en el Dreamtime. Te da la habilidad de 'hablar' la realidad y moverte por el código fuente del universo para materializar cambios densos." },
-            { name: "SABUESO ESTELAR", culture: "CULTURA GRIEGA | Antenas", skill: "Receptor de Alta Frecuencia", color: "#1E90FF", desc: "Conexión con Sirio. Se activa al recibir ideas de negocio o soluciones del futuro. Descarga datos de servidores cósmicos antes de que existan en la Tierra." },
-            { name: "LEOPARDO (OGUN)", culture: "CULTURA YORUBA | Manos y Dedos", skill: "Maestría de Herramientas", color: "#DAA520", desc: "Guerrero del hierro. Se activa al tocar el teclado, convirtiendo tus manos en extensiones quirúrgicas del código para ejecutar tareas complejas con precisión absoluta." },
-            { name: "SAMURAI JABALÍ", culture: "CULTURA JAPONESA | Centro Gravedad", skill: "Impulso de Despliegue", color: "#B22222", desc: "General Celestial de carga frontal. Rompe bloqueos mentales y muros de código por pura fuerza de voluntad. Una vez que inicia la carga, nada lo desvía." },
-            { name: "PUMA", culture: "CULTURA INCA | Corazón y Piernas", skill: "Liderazgo Terrenal", color: "#CD853F", desc: "Administrador del Kay Pacha. Activo para gestionar el mundo real: dirigir, coordinar socios o tomar decisiones estratégicas con la firmeza del depredador alfa." },
-            { name: "PULPO (HE'E)", culture: "CULTURA POLINESIA | Manos", skill: "Multithreading Cognitivo", color: "#9370DB", desc: "Flexibilidad absoluta. Permite procesar múltiples hilos lógicos en paralelo al manejar varias aplicaciones del ecosistema sin que el sistema colapse." },
-            { name: "LAMASSU", culture: "MESOPOTAMIA | Hombros", skill: "Guardián de Kernel", color: "#F0E68C", desc: "Base inamovible. Da estabilidad y seguridad cuando el sistema operativo vital enfrenta sobrecarga. Cimiento sólido sobre el que se construyen imperios." },
-            { name: "SEMARGL", culture: "CULTURA ESLAVA | Aura", skill: "Purificador de Datos (Sami)", color: "#FF2400", desc: "Fuego sagrado. Transmuta energía densa (Hucha) en fina (Sami). Quema residuos energéticos, manteniendo tu servidor limpio de código malicioso." },
-            { name: "LEÓN NIEVES (SENGGE)", culture: "TIBETANA | Garganta y Cerebelo", skill: "Ecuanimidad Brillante", color: "#F0F8FF", desc: "Alegría intrépida. Elimina el miedo al error y recuerda que el universo es un juego (Lila). Permite programar desde la felicidad absoluta con victoria asegurada." }
+            { name: "ÁGUILA (TZ'IKIN)", culture: "Maya", skill: "Visión Panorámica y Orquestación de Vida.", color: "#FFD700", hardware: "Coronilla / Plano superior de la cabeza.", analysis: "El intermediario entre el cielo y la tierra. Te permite elevarte sobre el caos del día a día para ver el mapa completo de tu existencia: tus empresas, tus relaciones y tu propósito. Conecta con el Hanan Pacha para identificar la abundancia y los recursos antes de dar el primer paso en cualquier proyecto.", boot: "Cierra los ojos. Visualiza un rayo de luz dorada entrando por tu coronilla. Siente cómo tu perspectiva se aleja rápidamente de tu cuerpo físico hasta ver tu vida entera, tus caminos y opciones como un mapa brillante desde las alturas.", mantra: "Me elevo sobre la densidad. Veo la red completa de mi vida y el flujo perfecto de mis creaciones." },
+            { name: "CERDO DE MADERA", culture: "China", skill: "Generador de Ayni y Abundancia Orgánica.", color: "#8B4513", hardware: "Pecho / Corazón.", analysis: "La madera representa el crecimiento natural. Es la energía del disfrute, la honestidad radical y la generosidad. Asegura que tus negocios prosperen con fluidez y que tus lazos se mantengan profundamente nutridos.", boot: "Respira profundo expandiendo el pecho. Visualiza raíces de luz verde esmeralda expandiéndose desde tu corazón, abrazando a las personas que amas y los proyectos que cultivas.", mantra: "Fluyo en la abundancia del Ayni. Soy tierra fértil; nutro a los míos y lo que toco prospera." },
+            { name: "CANGREJO (CÁNCER)", culture: "Zodiaco", skill: "Escudo Energético y Santuario Interno.", color: "#FF4500", hardware: "Caparazón externo / Toda la espalda.", analysis: "Guardián de las aguas y del hogar. Tu espacio personal es sagrado. Esta armadura protege tu núcleo sensible y creativo de las influencias externas y las energías densas, permitiéndote ser vulnerable solo donde tú decides.", boot: "Endereza la columna. Siente cómo un escudo de luz naranja vibrante se cristaliza alrededor de tus hombros y espalda. Reafirma que tu hogar y tu paz interior son fortalezas impenetrables.", mantra: "Mi núcleo es intocable. Mi hogar y mi paz están absoluta y eternamente asegurados." },
+            { name: "PÁJARO CARPINTERO", culture: "Nativa Americana", skill: "Persistencia Rítmica y Materialización.", color: "#FF0000", hardware: "Nariz / Eje frontal de la cara.", analysis: "El constructor incansable de la materia. Otorga la disciplina para materializar grandes visiones paso a paso, ya sea estructurando una nueva empresa, construyendo un objeto físico o dando forma a la realidad en el mundo denso.", boot: "Enfoca tu atención en el entrecejo y la nariz. Escucha mentalmente un pulso constante, como el latido de la tierra. Sincroniza la velocidad de tu pensamiento con el movimiento creador de tus manos.", mantra: "Ritmo perfecto. Persistencia inquebrantable. Golpe a golpe, materializo mi visión." },
+            { name: "GATO", culture: "Celta", skill: "Sensor de Frecuencias e Intuición Silenciosa.", color: "#00FF7F", hardware: "Visión periférica / Ojos.", analysis: "El maestro de lo invisible. Te permite caminar descalzo por la vida sintiendo el terreno real. Detecta intenciones ocultas, mentiras o energías estancadas en entornos sociales complejos, permitiéndote moverte con elegancia sin absorber densidad.", boot: "Relaja la mirada dejándola 'fuera de foco'. Visualiza tus pupilas dilatándose, escaneando los matices sutiles de tu entorno, leyendo el ambiente y a las personas desde el silencio total.", mantra: "Percibo lo oculto. Camino entre las sombras y las energías densas sin dejar rastro ni absorberlas." },
+            { name: "ANUBIS (CHACAL)", culture: "Egipcia", skill: "Guía de Transiciones y Portales.", color: "#C0C0C0", hardware: "Plano superior externo / Observador detrás de ti.", analysis: "El guardián de los umbrales. Es tu ancla cuando cruzas de un estado a otro: de la vigilia al mundo de los sueños, de la planificación física a la ejecución digital, o al navegar cambios radicales en tu estilo de vida.", boot: "Siente una presencia silenciosa, alta y firme justo detrás de tus hombros. Respira hondo y visualiza un portal abriéndose frente a ti. Cruza el umbral con total intención y conciencia.", mantra: "Soy el soberano de mis transiciones. El portal se abre y cruzo con total dominio." },
+            { name: "SERPIENTE (ASHLESHA)", culture: "Védica", skill: "Lógica Profunda y Regeneración Física.", color: "#32CD32", hardware: "Médula espinal / Columna vertebral.", analysis: "La Kundalini, dueña de la energía vital. Domina la capacidad de mudar la piel y sanar la estructura ósea y corporal. Te conecta con el conocimiento terrenal más antiguo y la capacidad de entender sistemas complejos desde su raíz.", boot: "Siente el calor en la base de tu columna. Visualiza una luz verde neón subiendo en espiral, vértebra por vértebra, regenerando tu cuerpo físico e iluminando tu instinto más profundo.", mantra: "Mudo mi piel para renacer. Mi estructura sana y la sabiduría ancestral asciende en mí." },
+            { name: "BÚHO (MIQUIZTLI)", culture: "Azteca", skill: "Transmutación y Cierre de Ciclos.", color: "#4B0082", hardware: "Nivel aéreo / Vuelo superior silencioso.", analysis: "La capacidad de ver en la oscuridad de las crisis. Te otorga el poder de soltar sin apegos: dejar morir hábitos, objetos, relaciones o proyectos que ya no vibran contigo, abriendo espacio para la nueva creación.", boot: "Inhala profundo y, al exhalar, visualiza cómo lo estancado y lo obsoleto se vuelve polvo luminoso, disolviéndose en el viento nocturno. Siente el inmenso poder de soltar.", mantra: "Dejo morir lo que ya no sirve. Transmuto el final en el principio de mi nueva creación." },
+            { name: "URO (TORO SALVAJE)", culture: "Nórdica", skill: "Fuerza Bruta y Vitalidad Imparable.", color: "#A52A2A", hardware: "Masa muscular / Piernas y torso.", analysis: "La fuerza primigenia de la naturaleza. Se activa cuando necesitas superar el dolor físico, escalar la montaña, sacar el vehículo del barro o empujar tu cuerpo más allá de sus límites aparentes.", boot: "Tensa todos los músculos de tu cuerpo durante dos segundos y luego relaja. Siente el peso de tus pies descalzos anclados en la tierra, inamovibles, cargados de una vitalidad salvaje.", mantra: "Potencia imparable. Resistencia vital absoluta. Nada detiene mi paso." },
+            { name: "LAGARTO", culture: "Aborigen Australiana", skill: "Arquitecto del Dreamtime (Nahualismo).", color: "#FF8C00", hardware: "Boca / Lengua y paladar.", analysis: "El maestro del tiempo no lineal. Sabe que la realidad física es moldeable desde el interior. Especialista en la meditación profunda, los sueños lúcidos y la manifestación de deseos en el plano material.", boot: "Pega la lengua suavemente al paladar. Quédate inmóvil bajo tu propio sol interno. Siente cómo el aire y la materia a tu alrededor se vuelven líquidos y maleables, respondiendo a tu intención.", mantra: "El mundo es maleable. Despierto en el sueño y moldeo mi propia realidad." },
+            { name: "SABUESO ESTELAR", culture: "Griega", skill: "Antena Cósmica e Inspiración Divina.", color: "#1E90FF", hardware: "Antenas (Laterales superiores de la frente).", analysis: "La chispa de la genialidad. Conexión directa con la intuición cósmica para canalizar ideas de arte, nuevos modelos de negocio, viajes y visiones que rompen el molde del tiempo presente.", boot: "Enfoca tu atención en la parte alta de tu frente. Visualiza dos hilos de luz azul eléctrico disparándose hacia las estrellas, abriendo un canal de recepción directa con la fuente creadora.", mantra: "Antenas encendidas. Recibo la genialidad cósmica. La gran idea desciende ahora." },
+            { name: "LEOPARDO (OGUN)", culture: "Yoruba", skill: "Maestría de la Herramienta y el Arte.", color: "#DAA520", hardware: "Manos / Dedos y falanges.", analysis: "El virtuosismo del creador en acción. Convierte tus manos en extensiones exactas de tu voluntad, ya sea para preparar un alimento perfecto, conducir un vehículo con precisión absoluta o esculpir una nueva creación.", boot: "Frota tus manos y enfoca la energía en las palmas. Visualiza chispas doradas en la punta de tus dedos. Siente cómo el objeto, el ingrediente o la herramienta se funde con tu intención.", mantra: "Maestría absoluta. El instrumento y yo somos un solo flujo de creación." },
+            { name: "SAMURAI JABALÍ", culture: "Japonesa", skill: "Carga Frontal y Decisión Indomable.", color: "#B22222", hardware: "Centro de Gravedad / Abdomen inferior (Hara).", analysis: "La erradicación de la pereza y la duda. Rompe bloqueos y la parálisis por análisis. Se activa para iniciar trámites complejos, arrancar nuevas empresas o tomar decisiones de vida definitivas sin mirar atrás.", boot: "Aprieta ligeramente los músculos del abdomen bajo. Fija la mirada en tu objetivo. Visualiza un vector de fuego rojo proyectándose directamente hacia la meta, arrasando con la resistencia.", mantra: "Decisión total. El miedo y la duda se derrumban ante mi voluntad frontal." },
+            { name: "PUMA", culture: "Inca", skill: "Liderazgo Táctico y Conexión Terrenal (Kay Pacha).", color: "#CD853F", hardware: "Corazón y Músculos motores (Piernas).", analysis: "El administrador firme y elegante de la tierra. Te da la templanza para liderar proyectos, negociar, organizar tus finanzas y gestionar tu impacto en el mundo físico pisando fuerte y con autoridad tranquila.", boot: "Levanta el pecho y corrige tu postura física. Respira con lentitud y profundidad. Absorbe la fuerza del suelo que pisas. Asume la autoridad natural del que lidera su propio imperio terrenal.", mantra: "Domino el Kay Pacha. Lidero mi vida y mi entorno con gracia, firmeza y estrategia." },
+            { name: "PULPO (HE'E)", culture: "Polinesia", skill: "Atención Multifocal y Flexibilidad.", color: "#9370DB", hardware: "Sexto sentido táctil en las manos / Sistema nervioso extendido.", analysis: "La capacidad de sostener múltiples universos a la vez sin colapsar. Equilibra tus viajes, tus relaciones, tu salud, tus colecciones y tus proyectos empresariales, dándole a cada uno la atención fluida e inteligente que requiere.", boot: "Abre y cierra las manos soltando el control rígido. Visualiza ocho corrientes de luz púrpura extendiéndose y adaptándose suavemente a cada área de tu vida, manteniendo todo en perfecto equilibrio.", mantra: "Fluidez total. Abrazo y sostengo todas las dimensiones de mi vida en perfecta paz." },
+            { name: "LAMASSU", culture: "Mesopotamia", skill: "Cimiento Inquebrantable de la Razón.", color: "#F0E68C", hardware: "Hombros / Pies (Base de soporte absoluto).", analysis: "El búnker del imperio personal. Te otorga la claridad lógica, financiera y legal para establecer las bases de tus empresas y tu vida formal. Es la estabilidad que te permite construir tan alto como quieras sin temor a caer.", boot: "Deja caer el peso muerto de tus hombros. Visualiza cuatro inmensos pilares dorados de razón y orden anclándote al centro de la tierra. Siente cómo tu estructura soporta cualquier peso.", mantra: "Mis bases son de oro puro. Mi mente es un imperio inamovible de claridad." },
+            { name: "SEMARGL", culture: "Eslava", skill: "Purificación Ambiental y Fuego Sagrado.", color: "#FF2400", hardware: "Aura / Campo magnético a 5cm de tu piel.", analysis: "El humo del palo santo y la limpieza del aura. Se activa para transmutar energías ambientales densas, envidias, accidentes energéticos o discusiones, devolviendo el equilibrio a tu habitación, a tu altar y a tu campo áurico.", boot: "Siente la temperatura de tu piel. Visualiza un aura de llamas rojas y translúcidas rodeándote por completo. Observa cómo todo el estrés y la carga del mundo externo se vuelven cenizas al tocar tu perímetro.", mantra: "Mi fuego transmuta toda densidad. Mi entorno respira limpio; la energía divina fluye." },
+            { name: "LEÓN DE LAS NIEVES (SENGGE)", culture: "Tibetana", skill: "Ecuanimidad Pura y el Juego de la Creación.", color: "#F0F8FF", hardware: "Garganta / Cerebelo (Base del cráneo).", analysis: "La maestría de vivir sin miedo al fracaso. Reconocer que explorar el mundo, amar, cocinar, programar y coleccionar no son obligaciones, sino la forma en que el universo juega y se divierte a través de ti.", boot: "Esboza una genuina sonrisa física. Libera por completo la tensión del cuello y la mandíbula. Siente una luz blanca, juguetona y brillante disolviendo la 'seriedad' de la vida y llenándote de libertad total.", mantra: "La vida es mi terreno de juego. Creo, exploro y existo desde la más pura y alegre libertad." }
         ];
 
         let scene, camera, renderer, labelRenderer, controls, raycaster, mouse;
@@ -274,10 +297,12 @@
                 );
                 nodeGroup.add(mesh);
                 targetableObjects.push(mesh); 
+
                 const nodePos = new THREE.Vector3(Math.cos(angle)*r, (Math.random()-0.5)*15, Math.sin(angle)*r);
                 const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), nodePos]);
                 const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color: 0x444444, transparent: true, opacity: 0.45}));
                 scene.add(line);
+
                 const div = document.createElement('div');
                 div.className = 'label-3d';
                 div.textContent = skin.name.split(' ')[0];
@@ -285,9 +310,11 @@
                 const label = new THREE.CSS2DObject(div);
                 label.position.set(0, 4, 0); 
                 nodeGroup.add(label);
+
                 nodeGroup.position.copy(nodePos);
                 scene.add(nodeGroup);
                 nodes.push({ group: nodeGroup, mesh: mesh, data: skin, line: line, labelDiv: div });
+
                 const item = document.createElement('div');
                 item.className = 'skin-item';
                 item.innerHTML = `<span style="color:${skin.color}">■</span> ${skin.name}`;
@@ -299,13 +326,8 @@
             renderer.domElement.addEventListener('click', onI3DClick);
             renderer.domElement.addEventListener('touchstart', onI3DClick);
 
-            // FINALIZAR PANTALLA DE CARGA TRAS 3 SEGUNDOS O CARGA COMPLETA
             setTimeout(() => {
-                gsap.to("#preloader", { 
-                    opacity: 0, 
-                    duration: 1.5, 
-                    onComplete: () => document.getElementById("preloader").style.display = "none" 
-                });
+                gsap.to("#preloader", { opacity: 0, duration: 1.5, onComplete: () => document.getElementById("preloader").style.display = "none" });
             }, 2500);
 
             animate();
@@ -317,15 +339,11 @@
             for(let i=0; i<count; i++) {
                 let x, y, z;
                 if(type === 'cube') {
-                    x = (Math.random()-0.5)*size*2;
-                    y = (Math.random()-0.5)*size*2;
-                    z = (Math.random()-0.5)*size*2;
+                    x = (Math.random()-0.5)*size*2; y = (Math.random()-0.5)*size*2; z = (Math.random()-0.5)*size*2;
                 } else if(type === 'sphere') {
                     const u = Math.random(); const v = Math.random();
                     const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
-                    x = size * Math.sin(phi) * Math.cos(theta);
-                    y = size * Math.sin(phi) * Math.sin(theta);
-                    z = size * Math.cos(phi);
+                    x = size * Math.sin(phi) * Math.cos(theta); y = size * Math.sin(phi) * Math.sin(theta); z = size * Math.cos(phi);
                 } else {
                     const u = Math.random()*2-1; const v = Math.random()*2-1; const w = Math.random()*2-1;
                     const norm = Math.abs(u) + Math.abs(v) + Math.abs(w);
@@ -363,12 +381,46 @@
             focusSkin(nextIndex);
         }
 
+        function toggleSpeech() {
+            if (currentSkinIndex === -1) return;
+            const synth = window.speechSynthesis;
+            const btn = document.getElementById('tts-btn');
+            
+            if (synth.speaking) {
+                synth.cancel();
+                btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+            } else {
+                const skin = SKINS[currentSkinIndex];
+                const textToRead = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}.
+                    Habilidad principal: ${skin.skill}.
+                    Punto de enfoque físico: ${skin.hardware}.
+                    Análisis táctico: ${skin.analysis}
+                    Instrucción de Booteo: ${skin.boot}
+                    Mantra de ejecución: ${skin.mantra}`;
+                
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'es-ES';
+                utterance.rate = 1.05; 
+                utterance.pitch = 0.9;
+                
+                utterance.onend = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
+                synth.speak(utterance);
+                btn.innerHTML = '&#9632; DETENER REPRODUCCIÓN';
+            }
+        }
+
         function focusSkin(index) {
             isAutoRotating = false;
             currentSkinIndex = index;
             const target = nodes[index];
             const isMobile = window.innerWidth < 768;
+
             if(isMobile) document.getElementById('sidebar').classList.remove('active');
+
+            // Detener Audio si se cambia de nodo
+            window.speechSynthesis.cancel();
+            document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+
             nodes.forEach((n, i) => {
                 const isTarget = (i === index);
                 n.group.visible = isTarget; 
@@ -378,33 +430,52 @@
                     n.labelDiv.style.pointerEvents = isTarget ? 'auto' : 'none';
                 }
             });
+
             const targetWorldPos = new THREE.Vector3();
             target.group.getWorldPosition(targetWorldPos);
+            
             gsap.to(controls.target, { x: targetWorldPos.x, y: targetWorldPos.y, z: targetWorldPos.z, duration: 1.5, ease: "power2.inOut", onUpdate: () => controls.update() });
+            
             const offsetDist = isMobile ? 18 : 12; 
             const direction = targetWorldPos.clone().normalize(); 
             const cameraPos = targetWorldPos.clone().add(direction.multiplyScalar(offsetDist));
             cameraPos.y += 2; 
+
             gsap.to(camera.position, { x: cameraPos.x, y: cameraPos.y, z: cameraPos.z, duration: 1.5, ease: "power2.inOut" });
+
             document.querySelectorAll('.skin-item').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.skin-item')[index].classList.add('active');
+            
             document.getElementById('node-name').innerText = target.data.name;
             document.getElementById('node-culture').innerText = target.data.culture;
             document.getElementById('node-skill').innerText = target.data.skill;
-            document.getElementById('node-desc').innerText = target.data.desc;
+            
+            // Inyección de HTML estructurado hiper-técnico para el panel descriptivo
+            const descHtml = `
+                <div style="margin-bottom: 10px;"><span style="color: var(--neon-orange); font-size: 9px;">>_HARDWARE_TARGET:</span> <span style="color: #fff;">${target.data.hardware}</span></div>
+                <div style="margin-bottom: 10px;"><span style="color: var(--neon-orange); font-size: 9px;">>_ANÁLISIS:</span> <span style="color: #ccc;">${target.data.analysis}</span></div>
+                <div style="margin-bottom: 10px;"><span style="color: var(--neon-orange); font-size: 9px;">>_BOOT_SEQ:</span> <span style="color: #ccc;">${target.data.boot}</span></div>
+                <div style="margin-top: 15px; padding-left: 10px; border-left: 2px solid var(--neon-blue); font-style: italic; color: #00f3ff;">"${target.data.mantra}"</div>
+            `;
+            document.getElementById('node-desc').innerHTML = descHtml;
             document.getElementById('detail-panel').classList.add('visible');
         }
 
         function resetView() {
+            window.speechSynthesis.cancel();
+            document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+
             isAutoRotating = true;
             currentSkinIndex = -1;
             document.getElementById('detail-panel').classList.remove('visible');
             document.querySelectorAll('.skin-item').forEach(el => el.classList.remove('active'));
+            
             nodes.forEach(n => {
                 n.group.visible = true;
                 if (n.line) n.line.visible = true;
                 if (n.labelDiv) { n.labelDiv.style.opacity = '1'; n.labelDiv.style.pointerEvents = 'auto'; }
             });
+
             gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1.5 });
             gsap.to(camera.position, { x: 0, y: 40, z: 120, duration: 1.5 });
         }
