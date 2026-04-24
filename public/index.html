@@ -255,16 +255,7 @@
         let isAutoRotating = true;
         let activeLayerGroups = [];
         let currentSkinIndex = -1;
-        let currentUtterance = null; // Variable global para proteger TTS en Android WebView
-
-        // Aislamiento seguro del pre-calentamiento TTS mediante Macrotarea
-        setTimeout(() => {
-            try {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-                }
-            } catch(e) { console.warn("TTS Pre-warmer Ignored", e); }
-        }, 1000);
+        let currentAudio = null; // Puntero global para el buffer de HTML5 Audio
 
         function init() {
             scene = new THREE.Scene();
@@ -401,42 +392,53 @@
             if (currentSkinIndex === -1) return;
             const btn = document.getElementById('tts-btn');
 
-            if (!('speechSynthesis' in window)) {
-                btn.innerHTML = '>[ERROR] MOTOR DE VOZ NO DETECTADO';
+            // Interrupción de reproducción actual si está activa
+            if (window.currentAudio && !window.currentAudio.paused) {
+                window.currentAudio.pause();
+                window.currentAudio = null;
+                btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
                 return;
             }
 
-            const synth = window.speechSynthesis;
+            const skin = SKINS[currentSkinIndex];
+            // Estructuración plana del payload
+            const rawText = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}. Habilidad principal: ${skin.skill}. Punto de enfoque físico: ${skin.hardware}. Análisis táctico: ${skin.analysis}. Instrucción de Booteo: ${skin.boot}. Mantra de ejecución: ${skin.mantra}.`;
             
-            try {
-                if (synth.speaking) {
-                    synth.cancel();
-                    btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
-                } else {
-                    const skin = SKINS[currentSkinIndex];
-                    const textToRead = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}. Habilidad principal: ${skin.skill}. Punto de enfoque físico: ${skin.hardware}. Análisis táctico: ${skin.analysis} Instrucción de Booteo: ${skin.boot} Mantra de ejecución: ${skin.mantra}`;
-                    
-                    currentUtterance = new SpeechSynthesisUtterance(textToRead);
-                    currentUtterance.lang = 'es-ES';
-                    currentUtterance.rate = 0.85; 
-                    currentUtterance.pitch = 0.6; 
+            // Limpieza y segmentación (Chunking) para evadir límites de Payload en APIs REST
+            const cleanText = rawText.replace(/[\n\r]/g, ' ').replace(/\s{2,}/g, ' ');
+            const chunks = cleanText.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g).filter(s => s.trim().length > 0);
+            
+            let chunkIndex = 0;
+            window.currentAudio = new Audio();
+            // Desaceleración nativa del buffer de audio para transmitir calma (pitch más grave percibido)
+            window.currentAudio.playbackRate = 0.85;
+            
+            btn.innerHTML = '&#9632; DETENER REPRODUCCIÓN';
 
-                    const voices = synth.getVoices();
-                    const esVoices = voices.filter(v => v.lang.startsWith('es'));
-                    const preferredVoice = esVoices.find(v => v.name.toLowerCase().includes('male') || v.name.includes('Google')) || esVoices[0];
-                    if (preferredVoice) {
-                        currentUtterance.voice = preferredVoice;
-                    }
-                    
-                    currentUtterance.onend = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
-                    currentUtterance.onerror = (e) => { console.warn("TTS Error:", e); btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
-                    
-                    synth.speak(currentUtterance);
-                    btn.innerHTML = '&#9632; DETENER REPRODUCCIÓN';
+            const playNextChunk = () => {
+                if (chunkIndex >= chunks.length) {
+                    btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+                    window.currentAudio = null;
+                    return;
                 }
-            } catch(e) {
-                console.error("Fallo crítico en TTS:", e);
-            }
+                
+                // Endpoint táctico público de Google (Bypass de autenticación con client=tw-ob)
+                const payload = encodeURIComponent(chunks[chunkIndex].trim());
+                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${payload}&tl=es&client=tw-ob`;
+                
+                window.currentAudio.src = url;
+                window.currentAudio.play().catch(e => {
+                    console.error("Audio API Blocked by WebView:", e);
+                    btn.innerHTML = '>[ERROR] REPRODUCCIÓN BLOQUEADA';
+                });
+                
+                window.currentAudio.onended = () => {
+                    chunkIndex++;
+                    playNextChunk();
+                };
+            };
+            
+            playNextChunk();
         }
 
         function focusSkin(index) {
@@ -445,7 +447,6 @@
             const target = nodes[index];
             const isMobile = window.innerWidth < 768;
 
-            // 1. Ejecutar Lógica Visual de UI inmediatamente
             if(isMobile) document.getElementById('sidebar').classList.remove('active');
 
             nodes.forEach((n, i) => {
@@ -458,7 +459,6 @@
                 }
             });
 
-            // 2. Ejecutar Motores de Cámara (GSAP)
             const targetWorldPos = new THREE.Vector3();
             target.group.getWorldPosition(targetWorldPos);
             
@@ -487,30 +487,34 @@
             document.getElementById('node-desc').innerHTML = descHtml;
             document.getElementById('detail-panel').classList.add('visible');
 
-            // 3. BLINDAJE EXTREMO: Desacoplar la cancelación del TTS del hilo principal UI mediante Macrotarea
+            // 3. BLINDAJE EXTREMO: Interrupción de Flujo de Audio HTML5
             setTimeout(() => {
                 try {
-                    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-                        window.speechSynthesis.cancel();
+                    if (window.currentAudio && !window.currentAudio.paused) {
+                        window.currentAudio.pause();
+                        window.currentAudio = null;
                     }
                     const btn = document.getElementById('tts-btn');
                     if (btn) btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
                 } catch(e) {
-                    console.warn("TTS Mute Error Ignored", e);
+                    console.warn("Audio Mute Error Ignored", e);
                 }
             }, 10);
         }
 
         function resetView() {
-            // Blindaje Try-Catch mediante Macrotarea
+            // 3. BLINDAJE EXTREMO: Interrupción de Flujo de Audio HTML5
             setTimeout(() => {
                 try {
-                    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-                        window.speechSynthesis.cancel();
+                    if (window.currentAudio && !window.currentAudio.paused) {
+                        window.currentAudio.pause();
+                        window.currentAudio = null;
                     }
                     const btn = document.getElementById('tts-btn');
                     if (btn) btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
-                } catch(e) {}
+                } catch(e) {
+                    console.warn("Audio Mute Error Ignored", e);
+                }
             }, 10);
 
             isAutoRotating = true;
