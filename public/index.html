@@ -74,12 +74,13 @@
         .mobile-nav {
             display: none;
             position: absolute;
-            top: 50%;
+            bottom: 85px; /* Desplazado al tercio inferior para liberar el centro */
+            top: auto;
             left: 0;
             width: 100%;
-            transform: translateY(-50%);
+            transform: none;
             justify-content: space-between;
-            padding: 0 15px;
+            padding: 0 20px;
             pointer-events: none;
             z-index: 145;
         }
@@ -89,16 +90,17 @@
             font-size: 35px;
             cursor: pointer;
             text-shadow: 0 0 15px var(--neon-blue), 0 0 5px #000;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.5);
             border-radius: 50%;
             width: 50px;
             height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(0, 243, 255, 0.2);
+            border: 1px solid rgba(0, 243, 255, 0.4);
             transition: all 0.2s ease;
         }
+        .nav-arrow:active { transform: scale(0.9); background: rgba(0, 243, 255, 0.2); }
 
         /* Reproductor TTS Botón */
         #tts-btn {
@@ -119,7 +121,7 @@
 
         @media (max-width: 768px) {
             #preloader {
-                background-position: 65% center; /* Ajuste Táctico: Mueve la imagen a la derecha en móvil */
+                background-position: center center; /* Centrado puro y absoluto */
             }
 
             .sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); z-index: 150;}
@@ -131,7 +133,7 @@
                 backdrop-filter: none;
                 border: none;
                 box-shadow: none;
-                padding-bottom: 90px; /* Evita que el texto colisione con controles */
+                padding-bottom: 140px; /* Evita colisión con controles y nuevas flechas */
             }
             
             .mobile-nav { display: flex; }
@@ -168,9 +170,13 @@
             cursor: pointer; pointer-events: auto;
             transition: opacity 0.3s ease;
         }
+        .label-3d:hover {
+            background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 10px var(--neon-blue);
+        }
 
         #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .close-btn { align-self: flex-end; color: var(--neon-blue); cursor: pointer; font-size: 12px; margin-bottom: 15px; font-weight: bold;}
+        .close-btn:hover { text-shadow: 0 0 8px var(--neon-blue); }
     </style>
 </head>
 <body>
@@ -400,8 +406,18 @@
                 
                 const utterance = new SpeechSynthesisUtterance(textToRead);
                 utterance.lang = 'es-ES';
-                utterance.rate = 1.05; 
-                utterance.pitch = 0.9;
+                
+                // Calibración acústica para paz y profundidad
+                utterance.rate = 0.85; // Flujo pausado
+                utterance.pitch = 0.6; // Frecuencia grave
+
+                // Filtro para priorizar voces masculinas/profundas si están instaladas en el SO
+                const voices = synth.getVoices();
+                const esVoices = voices.filter(v => v.lang.startsWith('es'));
+                const preferredVoice = esVoices.find(v => v.name.toLowerCase().includes('male') || v.name.includes('Google')) || esVoices[0];
+                if (preferredVoice) {
+                    utterance.voice = preferredVoice;
+                }
                 
                 utterance.onend = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
                 synth.speak(utterance);
