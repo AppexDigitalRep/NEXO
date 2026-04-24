@@ -257,10 +257,14 @@
         let currentSkinIndex = -1;
         let currentUtterance = null; // Variable global para proteger TTS en Android WebView
 
-        // Pre-calentamiento del motor de voz para WebView Android
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-        }
+        // Aislamiento seguro del pre-calentamiento TTS mediante Macrotarea
+        setTimeout(() => {
+            try {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+                }
+            } catch(e) { console.warn("TTS Pre-warmer Ignored", e); }
+        }, 1000);
 
         function init() {
             scene = new THREE.Scene();
@@ -397,7 +401,6 @@
             if (currentSkinIndex === -1) return;
             const btn = document.getElementById('tts-btn');
 
-            // Blindaje de compatibilidad para Android WebView
             if (!('speechSynthesis' in window)) {
                 btn.innerHTML = '>[ERROR] MOTOR DE VOZ NO DETECTADO';
                 return;
@@ -413,7 +416,6 @@
                     const skin = SKINS[currentSkinIndex];
                     const textToRead = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}. Habilidad principal: ${skin.skill}. Punto de enfoque físico: ${skin.hardware}. Análisis táctico: ${skin.analysis} Instrucción de Booteo: ${skin.boot} Mantra de ejecución: ${skin.mantra}`;
                     
-                    // Asignación a variable global para evadir Garbage Collection en WebView
                     currentUtterance = new SpeechSynthesisUtterance(textToRead);
                     currentUtterance.lang = 'es-ES';
                     currentUtterance.rate = 0.85; 
@@ -443,13 +445,8 @@
             const target = nodes[index];
             const isMobile = window.innerWidth < 768;
 
+            // 1. Ejecutar Lógica Visual de UI inmediatamente
             if(isMobile) document.getElementById('sidebar').classList.remove('active');
-
-            // Detener Audio si se cambia de nodo con Blindaje Try-Catch
-            try {
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            } catch(e) { console.warn("TTS Cancel Ignored", e); }
-            document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
 
             nodes.forEach((n, i) => {
                 const isTarget = (i === index);
@@ -461,6 +458,7 @@
                 }
             });
 
+            // 2. Ejecutar Motores de Cámara (GSAP)
             const targetWorldPos = new THREE.Vector3();
             target.group.getWorldPosition(targetWorldPos);
             
@@ -488,14 +486,32 @@
             `;
             document.getElementById('node-desc').innerHTML = descHtml;
             document.getElementById('detail-panel').classList.add('visible');
+
+            // 3. BLINDAJE EXTREMO: Desacoplar la cancelación del TTS del hilo principal UI mediante Macrotarea
+            setTimeout(() => {
+                try {
+                    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                    }
+                    const btn = document.getElementById('tts-btn');
+                    if (btn) btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+                } catch(e) {
+                    console.warn("TTS Mute Error Ignored", e);
+                }
+            }, 10);
         }
 
         function resetView() {
-            // Blindaje Try-Catch
-            try {
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            } catch(e) {}
-            document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+            // Blindaje Try-Catch mediante Macrotarea
+            setTimeout(() => {
+                try {
+                    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                    }
+                    const btn = document.getElementById('tts-btn');
+                    if (btn) btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+                } catch(e) {}
+            }, 10);
 
             isAutoRotating = true;
             currentSkinIndex = -1;
