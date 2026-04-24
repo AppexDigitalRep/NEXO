@@ -134,6 +134,7 @@
             
             .mobile-nav { display: flex; }
 
+            /* Blindaje de texto oscuro sobre 3D con Sombras Extremas */
             .detail-panel h1, .detail-panel p, .detail-panel label, .detail-panel .close-btn, .detail-panel span, .detail-panel div {
                 text-shadow: 2px 2px 4px #000, -2px -2px 4px #000, 0px 0px 10px #000, 0px 0px 15px rgba(0,0,0,0.8) !important;
             }
@@ -233,7 +234,7 @@
             { name: "PÁJARO CARPINTERO", culture: "Nativa Americana", skill: "Persistencia Rítmica y Materialización.", color: "#FF0000", hardware: "Nariz / Eje frontal de la cara.", analysis: "El constructor incansable de la materia. Otorga la disciplina para materializar grandes visiones paso a paso, ya sea estructurando una nueva empresa, construyendo un objeto físico o dando forma a la realidad en el mundo denso.", boot: "Enfoca tu atención en el entrecejo y la nariz. Escucha mentalmente un pulso constante, como el latido de la tierra. Sincroniza la velocidad de tu pensamiento con el movimiento creador de tus manos.", mantra: "Ritmo perfecto. Persistencia inquebrantable. Golpe a golpe, materializo mi visión." },
             { name: "GATO", culture: "Celta", skill: "Sensor de Frecuencias e Intuición Silenciosa.", color: "#00FF7F", hardware: "Visión periférica / Ojos.", analysis: "El maestro de lo invisible. Te permite caminar descalzo por la vida sintiendo el terreno real. Detecta intenciones ocultas, mentiras o energías estancadas en entornos sociales complejos, permitiéndote moverte con elegancia sin absorber densidad.", boot: "Relaja la mirada dejándola 'fuera de foco'. Visualiza tus pupilas dilatándose, escaneando los matices sutiles de tu entorno, leyendo el ambiente y a las personas desde el silencio total.", mantra: "Percibo lo oculto. Camino entre las sombras y las energías densas sin dejar rastro ni absorberlas." },
             { name: "ANUBIS (CHACAL)", culture: "Egipcia", skill: "Guía de Transiciones y Portales.", color: "#C0C0C0", hardware: "Plano superior externo / Observador detrás de ti.", analysis: "El guardián de los umbrales. Es tu ancla cuando cruzas de un estado a otro: de la vigilia al mundo de los sueños, de la planificación física a la ejecución digital, o al navegar cambios radicales en tu estilo de vida.", boot: "Siente una presencia silenciosa, alta y firme justo detrás de tus hombros. Respira hondo y visualiza un portal abriéndose frente a ti. Cruza el umbral con total intención y conciencia.", mantra: "Soy el soberano de mis transiciones. El portal se abre y cruzo con total dominio." },
-            { name: "SERPIENTE (ASHLESHA)", culture: "Védica", skill: "Lógica Profunda y Regeneración Física.", color: "#32CD32", hardware: "Médula espinal / Columna vertebral.", analysis: "La Kundalini, dueña de la energía vital. Domina la capacidad de mudar la piel y sanar la estructura ósea y corporal. Te conecta con el conocimiento terrenal más antiguo y la capacidad de entender sistemas complejos desde su raíz.", boot: "Siente el calor en la base de tu columna. Visualiza una luz verde neón subiendo en espiral, vértebra por vértebra, regenerando tu cuerpo físico e iluminando tu instinto más profundo.", mantra: "Mudo mi piel para renacer. Mi estructura sana y la sabiduría ancestral asciende en mí." },
+            { name: "SERPIENTE (ASHLESHA)", culture: "Védica", skill: "Lógica Profunda y Regeneración Física.", color: "#32CD32", hardware: "Médula espinal / Columna vertebral.", analysis: "La Kundalini, dueña de la energía vital. Domina la capacidad de mudar la piel y sanar la structure ósea y corporal. Te conecta con el conocimiento terrenal más antiguo y la capacidad de entender sistemas complejos desde su raíz.", boot: "Siente el calor en la base de tu columna. Visualiza una luz verde neón subiendo en espiral, vértebra por vértebra, regenerando tu cuerpo físico e iluminando tu instinto más profundo.", mantra: "Mudo mi piel para renacer. Mi estructura sana y la sabiduría ancestral asciende en mí." },
             { name: "BÚHO (MIQUIZTLI)", culture: "Azteca", skill: "Transmutación y Cierre de Ciclos.", color: "#4B0082", hardware: "Nivel aéreo / Vuelo superior silencioso.", analysis: "La capacidad de ver en la oscuridad de las crisis. Te otorga el poder de soltar sin apegos: dejar morir hábitos, objetos, relaciones o proyectos que ya no vibran contigo, abriendo espacio para la nueva creación.", boot: "Inhala profundo y, al exhalar, visualiza cómo lo estancado y lo obsoleto se vuelve polvo luminoso, disolviéndose en el viento nocturno. Siente el inmenso poder de soltar.", mantra: "Dejo morir lo que ya no sirve. Transmuto el final en el principio de mi nueva creación." },
             { name: "URO (TORO SALVAJE)", culture: "Nórdica", skill: "Fuerza Bruta y Vitalidad Imparable.", color: "#A52A2A", hardware: "Masa muscular / Piernas y torso.", analysis: "La fuerza primigenia de la naturaleza. Se activa cuando necesitas superar el dolor físico, escalar la montaña, sacar el vehículo del barro o empujar tu cuerpo más allá de sus límites aparentes.", boot: "Tensa todos los músculos de tu cuerpo durante dos segundos y luego relaja. Siente el peso de tus pies descalzos anclados en la tierra, inamovibles, cargados de una vitalidad salvaje.", mantra: "Potencia imparable. Resistencia vital absoluta. Nada detiene mi paso." },
             { name: "LAGARTO", culture: "Aborigen Australiana", skill: "Arquitecto del Dreamtime (Nahualismo).", color: "#FF8C00", hardware: "Boca / Lengua y paladar.", analysis: "El maestro del tiempo no lineal. Sabe que la realidad física es moldeable desde el interior. Especialista en la meditación profunda, los sueños lúcidos y la manifestación de deseos en el plano material.", boot: "Pega la lengua suavemente al paladar. Quédate inmóvil bajo tu propio sol interno. Siente cómo el aire y la materia a tu alrededor se vuelven líquidos y maleables, respondiendo a tu intención.", mantra: "El mundo es maleable. Despierto en el sueño y moldeo mi propia realidad." },
@@ -330,19 +331,9 @@
             renderer.domElement.addEventListener('click', onI3DClick);
             renderer.domElement.addEventListener('touchstart', onI3DClick);
 
-            // Efecto de desvanecimiento del preloader
             setTimeout(() => {
                 gsap.to("#preloader", { opacity: 0, duration: 1.5, onComplete: () => document.getElementById("preloader").style.display = "none" });
             }, 2500);
-
-            // Pre-calentamiento en caso de soporte Nativo Web
-            setTimeout(() => {
-                try {
-                    if ('speechSynthesis' in window) {
-                        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-                    }
-                } catch(e) {}
-            }, 1000);
 
             animate();
         }
@@ -401,11 +392,12 @@
             focusSkin(randomIndex);
         }
 
+        // Motor Dual de Voz (Nativo + HTML5 Bypass con Failover)
         function toggleSpeech() {
             if (currentSkinIndex === -1) return;
             const btn = document.getElementById('tts-btn');
 
-            // 1. Apagado maestro de cualquier motor activo
+            // 1. Apagado maestro de cualquier motor activo (HTML5 o Nativo)
             if (window.currentAudio && !window.currentAudio.paused) {
                 window.currentAudio.pause();
                 window.currentAudio = null;
@@ -434,7 +426,7 @@
 
             // 3. Enrutamiento Condicional
             if (nativeSupported) {
-                // EJECUCIÓN NATIVA
+                // EJECUCIÓN NATIVA (Desktop / Dispositivos sin restricción)
                 try {
                     window.currentUtterance = new SpeechSynthesisUtterance(rawText);
                     window.currentUtterance.lang = 'es-ES';
@@ -455,12 +447,13 @@
                 }
             } else {
                 // EJECUCIÓN BYPASS HTML5 (Android WebView / APK)
+                // Implementación de Failover Blob Validator para evitar NotSupportedError
                 const cleanText = rawText.replace(/[\n\r]/g, ' ').replace(/\s{2,}/g, ' ');
                 const chunks = cleanText.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g).filter(s => s.trim().length > 0);
                 
                 let chunkIndex = 0;
                 window.currentAudio = new Audio();
-                window.currentAudio.playbackRate = 0.85; 
+                window.currentAudio.playbackRate = 0.85; // Mantiene calibración acústica de paz
 
                 const playNextChunk = () => {
                     if (chunkIndex >= chunks.length) {
@@ -470,13 +463,33 @@
                     }
                     
                     const payload = encodeURIComponent(chunks[chunkIndex].trim());
-                    const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=es&q=${payload}`;
-                    
-                    window.currentAudio.src = url;
-                    window.currentAudio.play().catch(e => {
-                        console.error("Audio Fallback Blocked:", e);
-                        btn.innerHTML = '>[ERROR] REPRODUCCIÓN BLOQUEADA';
-                    });
+                    // Endpoint Primario: Google TTS via cliente GTX (evade el 403 standard)
+                    const urlGoogle = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=es&q=${payload}`;
+                    // Endpoint Respaldo: Youdao TTS (Sin bloqueos de IP conocidos)
+                    const urlBackup = `https://dict.youdao.com/dictvoice?audio=${payload}&le=es`;
+
+                    fetch(urlGoogle)
+                        .then(res => {
+                            if (!res.ok) throw new Error("Google HTTP Bloqueo");
+                            return res.blob();
+                        })
+                        .then(blob => {
+                            // Si Google devuelve HTML (Captcha/403) en lugar de Audio
+                            if (blob.type.includes('text/html')) throw new Error("Google Captcha Detectado");
+                            
+                            const blobUrl = URL.createObjectURL(blob);
+                            window.currentAudio.src = blobUrl;
+                            window.currentAudio.play().catch(e => { throw e; });
+                        })
+                        .catch(err => {
+                            console.warn("Redirigiendo a Servidor de Voz de Respaldo...", err);
+                            // Failover automático al servidor de Youdao
+                            window.currentAudio.src = urlBackup;
+                            window.currentAudio.play().catch(e => {
+                                console.error("Audio Fallback Blocked:", e);
+                                btn.innerHTML = '>[ERROR] REPRODUCCIÓN BLOQUEADA';
+                            });
+                        });
                     
                     window.currentAudio.onended = () => {
                         chunkIndex++;
@@ -498,10 +511,12 @@
             // BLINDAJE EXTREMO: Interrupción Dual de Flujo de Audio
             setTimeout(() => {
                 try {
+                    // Mutea el motor HTML5 (APK)
                     if (window.currentAudio && !window.currentAudio.paused) {
                         window.currentAudio.pause();
                         window.currentAudio = null;
                     }
+                    // Mutea el motor Nativo (Web)
                     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
                         window.speechSynthesis.cancel();
                     }
@@ -553,10 +568,12 @@
             // BLINDAJE EXTREMO: Interrupción Dual de Flujo de Audio
             setTimeout(() => {
                 try {
+                    // Mutea el motor HTML5 (APK)
                     if (window.currentAudio && !window.currentAudio.paused) {
                         window.currentAudio.pause();
                         window.currentAudio = null;
                     }
+                    // Mutea el motor Nativo (Web)
                     if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
                         window.speechSynthesis.cancel();
                     }
