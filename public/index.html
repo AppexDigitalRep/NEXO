@@ -217,7 +217,6 @@
             <button class="btn" onclick="toggleIndex()">ÍNDICE</button>
             <button class="btn" onclick="leerAura()">LECTOR DE AURA</button>
             <button class="btn" onclick="resetView()">VISTA GLOBAL</button>
-            <button class="btn" style="border-color: var(--neon-purple); color: var(--neon-purple);" onclick="abrirWebExterna()">WEB EXTERNA</button>
         </div>
     </div>
 
@@ -403,11 +402,6 @@
             focusSkin(randomIndex);
         }
 
-        // ESCAPE DEL APK AL NAVEGADOR NATIVO DEL USUARIO
-        function abrirWebExterna() {
-            window.open('https://appexdigitalrep.github.io/NEXO/public/', '_system');
-        }
-
         // MOTOR DUAL CON DESBLOQUEO SILENCIOSO (SILENT UNLOCKER) PARA APK AUTOPLAY POLICY
         function toggleSpeech() {
             if (currentSkinIndex === -1) return;
@@ -465,7 +459,7 @@
                 window.currentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
                 window.currentAudio.play().catch(e => { console.warn("Unlocker block", e); });
                 
-                window.currentAudio.playbackRate = 0.85; 
+                window.currentAudio.playbackRate = 0.75; 
 
                 const playNextChunk = () => {
                     if (chunkIndex >= chunks.length) {
@@ -475,7 +469,7 @@
                     }
                     
                     const payload = encodeURIComponent(chunks[chunkIndex].trim());
-                    const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=es&q=${payload}`;
+                    const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=es-US&q=${payload}`;
                     
                     window.currentAudio.src = url;
                     window.currentAudio.play().catch(e => {
