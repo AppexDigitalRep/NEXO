@@ -1,0 +1,77 @@
+name: Build Android APK
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Install Dependencies (Blindado)
+        run: |
+          npm install
+          npm install @capacitor/local-notifications @capacitor/app-launcher
+          npm install @capacitor/core @capacitor/android
+          npm install -D @capacitor/cli @capacitor/assets
+
+      - name: Ensure Capacitor Config (Auto-Generador)
+        run: |
+          if [ ! -f capacitor.config.json ]; then
+            echo '{
+              "appId": "com.appex.nexus",
+              "appName": "Nexus",
+              "webDir": "public",
+              "server": {
+                "url": "https://appexdigitalrep.github.io/NEXO/public/",
+                "cleartext": true
+              }
+            }' > capacitor.config.json
+          fi
+
+      - name: Capacitor Sync
+        run: |
+          npx cap add android || true
+          npx cap copy android
+          npx cap update android
+
+      # --- PERMISO PARA QUE EL APK DETECTE LA APP DE PAYPAL ---
+      - name: Add PayPal Query Intent
+        run: |
+          sed -i '/<\/manifest>/i \    <queries>\n        <package android:name="com.paypal.android.p2pmobile" />\n    </queries>' android/app/src/main/AndroidManifest.xml
+
+      - name: Generate App Icons
+        run: npx @capacitor/assets generate --android || true
+
+      - name: Fix Kotlin Duplicate Classes
+        run: |
+          echo "configurations.all {
+              resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                  if (details.requested.group == 'org.jetbrains.kotlin') {
+                      details.useVersion '1.8.22'
+                  }
+              }
+          }" >> android/app/build.gradle
+
+      - name: Build APK
+        run: |
+          cd android && ./gradlew assembleDebug
+
+      # --- RENOMBRAR EL ARCHIVO DE SALIDA A NEXUS ---
+      - name: Rename APK to Nexus
+        run: |
+          mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/Nexo.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexo-App
+          path: android/app/build/outputs/apk/debug/Nexo.apk
