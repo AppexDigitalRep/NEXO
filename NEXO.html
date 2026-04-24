@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXO 31.18 - VISIÓN ÍNTEGRA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;500&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #7000ff;
+            --neon-orange: #FF8C00;
+            --glass: rgba(5, 5, 10, 0.95);
+            --border: 1px solid rgba(0, 243, 255, 0.3);
+        }
+
+        * { box-sizing: border-box; } /* Prevención de desbordamiento arquitectónico */
+
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; color: #fff; font-family: 'Fira Code', monospace; overflow: hidden; touch-action: none; }
+
+        /* INTERFAZ UI */
+        #ui-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: space-between;
+            pointer-events: none; z-index: 100;
+        }
+
+        .sidebar, .detail-panel {
+            pointer-events: auto; 
+            /* Fusión estelar y elemental */
+            background: linear-gradient(135deg, rgba(5,5,10,0.95) 40%, rgba(20,10,25,0.90) 100%);
+            backdrop-filter: blur(12px);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; flex-direction: column; z-index: 110;
+            box-shadow: inset 0 0 25px rgba(112, 0, 255, 0.15), 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+
+        /* Sidebar Slim */
+        .sidebar { width: 220px; padding: 15px; overflow-y: auto; }
+        .sidebar.hidden { transform: translateX(-100%); }
+        
+        #skin-list {
+            /* Vetas de Tierra y Aire */
+            border-left: 1px solid rgba(46, 139, 87, 0.4); 
+            border-right: 1px solid rgba(135, 206, 235, 0.4);
+            padding: 0 10px;
+        }
+
+        /* Panel Detalle Slim */
+        .detail-panel { 
+            width: 300px; 
+            padding: 25px; 
+            transform: translateX(100%); 
+            z-index: 120;
+            overflow-y: auto;
+            /* Polos de Fuego y Agua */
+            border-bottom: 2px solid rgba(255, 69, 0, 0.5); 
+            border-top: 2px solid rgba(0, 191, 255, 0.5); 
+            border-left: 1px solid rgba(112, 0, 255, 0.3);
+        }
+        .detail-panel.visible { transform: translateX(0); }
+
+        /* Responsividad Móvil, Transparencia y Z-Index */
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); z-index: 150;}
+            .sidebar.active { transform: translateX(0); }
+            
+            .detail-panel { 
+                width: 100%; position: absolute; height: 100%; z-index: 130;
+                /* Transparencia total para despeje de vista 3D */
+                background: transparent;
+                backdrop-filter: none;
+                border: none;
+                box-shadow: none;
+            }
+            
+            /* Sombra profunda para garantizar legibilidad de textos sobre modelos 3D */
+            .detail-panel h1, .detail-panel p, .detail-panel label, .detail-panel .close-btn {
+                text-shadow: 2px 2px 4px #000, -2px -2px 4px #000, 0px 0px 10px #000;
+            }
+
+            .controls { z-index: 140; } /* Controles operativos sobre la vista de detalle */
+        }
+
+        /* Controles Inferiores */
+        .controls {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; pointer-events: auto; z-index: 130;
+        }
+
+        .btn {
+            background: rgba(0, 243, 255, 0.05); border: 1px solid var(--neon-blue);
+            color: var(--neon-blue); padding: 12px 20px; cursor: pointer;
+            font-family: 'Orbitron'; font-size: 10px; text-transform: uppercase; border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+
+        .skin-item { padding: 10px; margin: 3px 0; cursor: pointer; font-size: 11px; color: #aaa; border-left: 2px solid transparent; transition: all 0.2s ease;}
+        .skin-item:hover { color: #fff; background: rgba(255,255,255,0.02); }
+        .skin-item.active { border-left-color: var(--neon-blue); background: rgba(0, 243, 255, 0.1); color: var(--neon-blue); }
+
+        /* Etiquetas 3D */
+        .label-3d {
+            color: #fff; font-family: 'Orbitron'; font-size: 10px;
+            background: rgba(0,0,0,0.8); padding: 3px 7px; border: 1px solid var(--neon-blue);
+            white-space: nowrap; text-shadow: 0 0 5px var(--neon-blue);
+            cursor: pointer; pointer-events: auto;
+            transition: opacity 0.3s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+        .label-3d:hover {
+            background: rgba(0, 243, 255, 0.2); box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .close-btn { align-self: flex-end; color: var(--neon-blue); cursor: pointer; font-size: 12px; margin-bottom: 15px; font-weight: bold;}
+        .close-btn:hover { text-shadow: 0 0 8px var(--neon-blue); }
+    </style>
+</head>
+<body>
+
+    <div id="ui-wrapper">
+        <div id="sidebar" class="sidebar">
+            <div class="close-btn" onclick="toggleIndex()">[X] CERRAR</div>
+            <h2 style="font-size: 16px; color: var(--neon-blue); font-family: 'Orbitron'; margin: 0 0 20px 0;">MASTER_INDEX</h2>
+            <div id="skin-list"></div>
+        </div>
+
+        <div id="detail-panel" class="detail-panel">
+            <div class="close-btn" onclick="resetView()">[X] LIBERAR_FOCO</div>
+            
+            <div style="display: flex; flex-direction: column; flex-grow: 1; height: 100%;">
+                <div>
+                    <h1 id="node-name" style="font-size: 20px; font-family: 'Orbitron'; margin: 0; color: var(--neon-blue);">NAME</h1>
+                    <p id="node-culture" style="color: var(--neon-purple); font-size: 11px; margin: 0 0 25px 0;">CULTURA</p>
+                </div>
+                
+                <div style="margin-top: auto; padding-bottom: 70px;">
+                    <label style="color: var(--neon-blue); font-size: 9px; letter-spacing: 1px;">MODO_ACTIVO</label>
+                    <p id="node-skill" style="font-size: 14px; margin: 5px 0 20px 0; color: #fff;"></p>
+                    
+                    <label style="color: var(--neon-blue); font-size: 9px; letter-spacing: 1px;">ANÁLISIS_FRACTAL</label>
+                    <p id="node-desc" style="font-size: 12px; color: #ccc; line-height: 1.6; margin: 5px 0 0 0;"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="toggleIndex()">Índice</button>
+            <button class="btn" onclick="resetView()">VISTA_GLOBAL</button>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // BASE DE DATOS INYECTADA (INVENTARIO MAESTRO DE 18 SKINS)
+        const SKINS = [
+            { name: "ÁGUILA (TZ'IKIN)", culture: "CULTURA MAYA | Coronilla", skill: "Orquestación de Alto Nivel", color: "#FFD700", desc: "El intermediario entre el cielo y la tierra. Posee la visión panorámica del sistema completo. Se activa cuando diseñas la arquitectura de un proyecto, permitiendo ver el 'todo' y detectar abundancia antes de programar. Conexión con el Hanan Pacha." },
+            { name: "CERDO DE MADERA", culture: "CULTURA CHINA (1995) | Corazón", skill: "Generador de Ayni", color: "#8B4513", desc: "Honestidad radical, generosidad y crecimiento orgánico. Se activa en momentos de intercambio y flujo de dinero. Asegura crecimiento constante y relaciones nutridas." },
+            { name: "CANGREJO (CÁNCER)", culture: "ZODIACO OCCIDENTAL | Caparazón", skill: "Firewall Emocional", color: "#FF4500", desc: "Guardián de las aguas internas. Armadura rígida que protege un núcleo creativo. Sistema de seguridad perimetral para blindar la paz mental de influencias densas." },
+            { name: "PÁJARO CARPINTERO", culture: "NATIVA AMERICANA | Eje Frontal", skill: "Persistencia de Código", color: "#FF0000", desc: "Constructor rítmico. Se activa durante largas jornadas técnicas, otorgando disciplina para picar código con ritmo perfecto. Avanza en horas lo que a otros toma semanas." },
+            { name: "GATO", culture: "CULTURA CELTA | Percepción Sensorial", skill: "Sensor de Anomalías", color: "#00FF7F", desc: "Guardián de lo invisible. Detecta 'bugs' o malas vibras antes de manifestarse. Permite moverse por entornos complejos o código legado con sigilo y elegancia, sin ensuciar la energía." },
+            { name: "ANUBIS (CHACAL)", culture: "CULTURA EGIPCIA | Nivel Superior", skill: "Administrador de Transiciones", color: "#C0C0C0", desc: "El embalsamador que domina el paso entre realidades. Activo al pasar del mundo físico al digital o vigilia a sueño. Asegura un 'login' y 'logout' seguro en cada realidad." },
+            { name: "SERPIENTE (ASHLESHA)", culture: "ASTROLOGÍA VÉDICA | Médula Ósea", skill: "Lógica de Bajo Nivel", color: "#32CD32", desc: "Energía Kundalini y conocimiento profundo. Conexión con el hardware biológico para procesos de sanación física y entrada a niveles lógicos de alta complejidad." },
+            { name: "BÚHO (MIQUIZTLI)", culture: "CULTURA AZTECA | Vuelo Silencioso", skill: "Refactorización Total", color: "#4B0082", desc: "La transformación profunda. El poder de 'borrar el archivo' y dejar morir lo obsoleto para que el sistema se actualice. Transmuta el dolor en sabiduría técnica." },
+            { name: "URO (TORO SALVAJE)", culture: "CULTURA NÓRDICA | Músculos", skill: "Desempeño de Alto Rendimiento", color: "#A52A2A", desc: "Potencia bruta y resistencia inagotable. Activo en crisis físicas o esfuerzo extremo. Nada te detiene cuando esta skin toma el mando." },
+            { name: "LAGARTO", culture: "ABORÍGEN AUSTRALIANA | Palabra", skill: "Navegador de Realidades", color: "#FF8C00", desc: "Maestro de la paciencia en el Dreamtime. Te da la habilidad de 'hablar' la realidad y moverte por el código fuente del universo para materializar cambios densos." },
+            { name: "SABUESO ESTELAR", culture: "CULTURA GRIEGA | Antenas", skill: "Receptor de Alta Frecuencia", color: "#1E90FF", desc: "Conexión con Sirio. Se activa al recibir ideas de negocio o soluciones del futuro. Descarga datos de servidores cósmicos antes de que existan en la Tierra." },
+            { name: "LEOPARDO (OGUN)", culture: "CULTURA YORUBA | Manos y Dedos", skill: "Maestría de Herramientas", color: "#DAA520", desc: "Guerrero del hierro. Se activa al tocar el teclado, convirtiendo tus manos en extensiones quirúrgicas del código para ejecutar tareas complejas con precisión absoluta." },
+            { name: "SAMURAI JABALÍ", culture: "CULTURA JAPONESA | Centro Gravedad", skill: "Impulso de Despliegue", color: "#B22222", desc: "General Celestial de carga frontal. Rompe bloqueos mentales y muros de código por pura fuerza de voluntad. Una vez que inicia la carga, nada lo desvía." },
+            { name: "PUMA", culture: "CULTURA INCA | Corazón y Piernas", skill: "Liderazgo Terrenal", color: "#CD853F", desc: "Administrador del Kay Pacha. Activo para gestionar el mundo real: dirigir, coordinar socios o tomar decisiones estratégicas con la firmeza del depredador alfa." },
+            { name: "PULPO (HE'E)", culture: "CULTURA POLINESIA | Manos", skill: "Multithreading Cognitivo", color: "#9370DB", desc: "Flexibilidad absoluta. Permite procesar múltiples hilos lógicos en paralelo al manejar varias aplicaciones del ecosistema sin que el sistema colapse." },
+            { name: "LAMASSU", culture: "MESOPOTAMIA | Hombros", skill: "Guardián de Kernel", color: "#F0E68C", desc: "Base inamovible. Da estabilidad y seguridad cuando el sistema operativo vital enfrenta sobrecarga. Cimiento sólido sobre el que se construyen imperios." },
+            { name: "SEMARGL", culture: "CULTURA ESLAVA | Aura", skill: "Purificador de Datos (Sami)", color: "#FF2400", desc: "Fuego sagrado. Transmuta energía densa (Hucha) en fina (Sami). Quema residuos energéticos, manteniendo tu servidor limpio de código malicioso." },
+            { name: "LEÓN NIEVES (SENGGE)", culture: "TIBETANA | Garganta y Cerebelo", skill: "Ecuanimidad Brillante", color: "#F0F8FF", desc: "Alegría intrépida. Elimina el miedo al error y recuerda que el universo es un juego (Lila). Permite programar desde la felicidad absoluta con victoria asegurada." }
+        ];
+
+        let scene, camera, renderer, labelRenderer, controls, raycaster, mouse;
+        let nodes = [], targetableObjects = [];
+        let isAutoRotating = true;
+        let activeLayerGroups = [];
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 4000);
+            camera.position.set(0, 40, 120);
+
+            // Renderer 3D
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Renderer Etiquetas
+            labelRenderer = new THREE.CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            document.body.appendChild(labelRenderer.domElement);
+
+            // Controles
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Física de Toque (Raycaster)
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Luces
+            scene.add(new THREE.AmbientLight(0x444444));
+            const sun = new THREE.PointLight(0xffffff, 3, 1000);
+            sun.position.set(50, 50, 50);
+            scene.add(sun);
+
+            // --- GEOMETRÍA SAGRADA ANIDADA (VISIÓN ÍNTEGRA) ---
+
+            // Nivel 2: CUBO CENTRAL (Estrellas Tupidas, Rotación Lenta)
+            createParticleLayer('cube', 90, 3500, 0xffffff, 0.0005, 0.4); 
+
+            // Nivel 3: Esfera (Purple, Rotación Lenta)
+            createParticleLayer('sphere', 260, 1600, 0x9370DB, 0.0003, 1.5); 
+
+            // Nivel 4: Rombo (White, Rotación Lenta)
+            createParticleLayer('rhombus', 1040, 2600, 0xffffff, 0.0002, 1.5); 
+
+            // Centro: CHAWPI (Planeta Wireframe)
+            const chawpi = new THREE.Mesh(new THREE.IcosahedronGeometry(3, 1), new THREE.MeshPhongMaterial({color: 0x00f3ff, wireframe: true}));
+            scene.add(chawpi);
+
+            // NODOS Y LISTA
+            const list = document.getElementById('skin-list');
+            SKINS.forEach((skin, i) => {
+                const angle = (i / 18) * Math.PI * 2;
+                const r = 40; 
+                const nodeGroup = new THREE.Group();
+                
+                // Romboide
+                const mesh = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(1.5, 0),
+                    new THREE.MeshPhongMaterial({ color: skin.color, emissive: skin.color, emissiveIntensity: 0.6, flatShading: true })
+                );
+                nodeGroup.add(mesh);
+                targetableObjects.push(mesh); 
+
+                // Línea sutil de conexión
+                const nodePos = new THREE.Vector3(Math.cos(angle)*r, (Math.random()-0.5)*15, Math.sin(angle)*r);
+                const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), nodePos]);
+                const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color: 0x444444, transparent: true, opacity: 0.45}));
+                scene.add(line);
+
+                // Etiqueta flotante (Interactiva)
+                const div = document.createElement('div');
+                div.className = 'label-3d';
+                div.textContent = skin.name.split(' ')[0];
+                div.onclick = () => focusSkin(i); // Vínculo directo de evento clic
+                const label = new THREE.CSS2DObject(div);
+                label.position.set(0, 4, 0); 
+                nodeGroup.add(label);
+
+                nodeGroup.position.copy(nodePos);
+                scene.add(nodeGroup);
+                
+                // Almacenar referencias completas (incluyendo línea) para culling
+                nodes.push({ group: nodeGroup, mesh: mesh, data: skin, line: line, labelDiv: div });
+
+                // Item de la lista
+                const item = document.createElement('div');
+                item.className = 'skin-item';
+                item.innerHTML = `<span style="color:${skin.color}">■</span> ${skin.name}`;
+                item.onclick = () => focusSkin(i);
+                list.appendChild(item);
+            });
+
+            // Eventos globales
+            window.addEventListener('resize', onResize);
+            renderer.domElement.addEventListener('click', onI3DClick);
+            renderer.domElement.addEventListener('touchstart', onI3DClick);
+
+            animate();
+        }
+
+        // Creador de Capas Geométricas
+        function createParticleLayer(type, size, count, color, rotSpeed, pointSize = 1.5) {
+            const geo = new THREE.BufferGeometry();
+            const pos = [];
+            for(let i=0; i<count; i++) {
+                let x, y, z;
+                if(type === 'cube') {
+                    x = (Math.random()-0.5)*size*2;
+                    y = (Math.random()-0.5)*size*2;
+                    z = (Math.random()-0.5)*size*2;
+                } else if(type === 'sphere') {
+                    const u = Math.random(); const v = Math.random();
+                    const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
+                    x = size * Math.sin(phi) * Math.cos(theta);
+                    y = size * Math.sin(phi) * Math.sin(theta);
+                    z = size * Math.cos(phi);
+                } else { // Rhombus/Octahedron
+                    const u = Math.random()*2-1; const v = Math.random()*2-1; const w = Math.random()*2-1;
+                    const norm = Math.abs(u) + Math.abs(v) + Math.abs(w);
+                    x = (u/norm)*size; y = (v/norm)*size; z = (w/norm)*size;
+                }
+                pos.push(x, y, z);
+            }
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+            const points = new THREE.Points(geo, new THREE.PointsMaterial({color: color, size: pointSize, transparent: true, opacity: 0.7}));
+            
+            const group = new THREE.Group();
+            group.add(points);
+            group.userData.rotSpeed = rotSpeed;
+            scene.add(group);
+            activeLayerGroups.push(group);
+        }
+
+        // --- CÁMARA LOCK-ON Y AISLAMIENTO VISUAL TOTAL ---
+        function onI3DClick(event) {
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(targetableObjects);
+
+            if (intersects.length > 0) {
+                const clickedMesh = intersects[0].object;
+                const index = nodes.findIndex(n => n.mesh === clickedMesh);
+                if (index !== -1) focusSkin(index);
+            }
+        }
+
+        function focusSkin(index) {
+            isAutoRotating = false;
+            const target = nodes[index];
+            const isMobile = window.innerWidth < 768;
+
+            if(isMobile) document.getElementById('sidebar').classList.remove('active');
+
+            // Lógica de Aislamiento Visual Estricto (Culling incluyendo DOM Elements)
+            nodes.forEach((n, i) => {
+                const isTarget = (i === index);
+                n.group.visible = isTarget; // Oculta mallas 3D
+                if(n.line) n.line.visible = isTarget; // Oculta línea
+                
+                // Oculta elemento DOM de etiqueta (CSS2D no responde al visible false nativo)
+                if(n.labelDiv) {
+                    n.labelDiv.style.opacity = isTarget ? '1' : '0';
+                    n.labelDiv.style.pointerEvents = isTarget ? 'auto' : 'none';
+                }
+            });
+
+            // Extracción Vectorial Mundial
+            const targetWorldPos = new THREE.Vector3();
+            target.group.getWorldPosition(targetWorldPos);
+            
+            gsap.to(controls.target, {
+                x: targetWorldPos.x,
+                y: targetWorldPos.y,
+                z: targetWorldPos.z,
+                duration: 1.5,
+                ease: "power2.inOut",
+                onUpdate: () => controls.update()
+            });
+
+            const offsetDist = isMobile ? 18 : 12; 
+            const direction = targetWorldPos.clone().normalize(); 
+            const cameraPos = targetWorldPos.clone().add(direction.multiplyScalar(offsetDist));
+            cameraPos.y += 2; 
+
+            gsap.to(camera.position, {
+                x: cameraPos.x,
+                y: cameraPos.y,
+                z: cameraPos.z,
+                duration: 1.5,
+                ease: "power2.inOut"
+            });
+
+            // Actualización UI
+            document.querySelectorAll('.skin-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.skin-item')[index].classList.add('active');
+            
+            document.getElementById('node-name').innerText = target.data.name;
+            document.getElementById('node-culture').innerText = target.data.culture;
+            document.getElementById('node-skill').innerText = target.data.skill;
+            document.getElementById('node-desc').innerText = target.data.desc;
+            document.getElementById('detail-panel').classList.add('visible');
+        }
+
+        function resetView() {
+            isAutoRotating = true;
+            document.getElementById('detail-panel').classList.remove('visible');
+            document.querySelectorAll('.skin-item').forEach(el => el.classList.remove('active'));
+            
+            // Restaurar visibilidad universal íntegra (3D y DOM)
+            nodes.forEach(n => {
+                n.group.visible = true;
+                if (n.line) n.line.visible = true;
+                if (n.labelDiv) {
+                    n.labelDiv.style.opacity = '1';
+                    n.labelDiv.style.pointerEvents = 'auto';
+                }
+            });
+
+            gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1.5 });
+            gsap.to(camera.position, { x: 0, y: 40, z: 120, duration: 1.5 });
+        }
+
+        function toggleIndex() {
+            const s = document.getElementById('sidebar');
+            window.innerWidth < 768 ? s.classList.toggle('active') : s.classList.toggle('hidden');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.001;
+
+            // Velocidad angular reducida para flujo armónico
+            if(isAutoRotating) scene.rotation.y += 0.0003;
+
+            // Rotación independiente de las capas lentificada
+            activeLayerGroups.forEach((group, i) => {
+                group.rotation.y += group.userData.rotSpeed;
+                group.rotation.x = Math.sin(time * 0.05 + i) * 0.03; 
+            });
+
+            // Rotación local de los nodos suavizada
+            nodes.forEach(n => n.group.children[0].rotation.y += 0.004);
+
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init();
+    </script>
+</body>
+</html>
