@@ -1,4 +1,7 @@
-// NUEVO CÓDIGO IMPLEMENTADO
+{
+  "appId": "com.appex.nexo",
+  "appName": "NEXO",
+  "webDir": "public",
   "server": {
     "url": "https://appexdigitalrep.github.io/NEXO/public/",
     "cleartext": true,
@@ -7,3 +10,4 @@
       "github.com"
     ]
   }
+}
