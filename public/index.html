@@ -26,7 +26,7 @@
             background-color: #000;
             background-image: url('imagenes/fondo.png'); 
             background-size: cover;
-            background-position: center;
+            background-position: center center;
             background-repeat: no-repeat;
             display: flex;
             align-items: center;
@@ -120,10 +120,6 @@
         #tts-btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 10px var(--neon-blue); }
 
         @media (max-width: 768px) {
-            #preloader {
-                background-position: center center; 
-            }
-
             .sidebar { width: 100%; position: absolute; height: 100%; transform: translateX(-100%); z-index: 150;}
             .sidebar.active { transform: translateX(0); }
             
@@ -138,7 +134,6 @@
             
             .mobile-nav { display: flex; }
 
-            /* Blindaje de texto oscuro sobre 3D con Sombras Extremas */
             .detail-panel h1, .detail-panel p, .detail-panel label, .detail-panel .close-btn, .detail-panel span, .detail-panel div {
                 text-shadow: 2px 2px 4px #000, -2px -2px 4px #000, 0px 0px 10px #000, 0px 0px 15px rgba(0,0,0,0.8) !important;
             }
@@ -146,7 +141,6 @@
             .controls { z-index: 140; }
         }
 
-        /* Controles Inferiores (Optimizados para 3 botones) */
         .controls {
             position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 8px; pointer-events: auto; z-index: 130;
@@ -258,15 +252,7 @@
         let isAutoRotating = true;
         let activeLayerGroups = [];
         let currentSkinIndex = -1;
-
-        // Permite precargar voces si la API es funcional
-        setTimeout(() => {
-            try {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.getVoices();
-                }
-            } catch(e) {}
-        }, 1000);
+        let currentAudio = null; // Puntero global para el buffer de HTML5 Audio
 
         function init() {
             scene = new THREE.Scene();
@@ -344,9 +330,19 @@
             renderer.domElement.addEventListener('click', onI3DClick);
             renderer.domElement.addEventListener('touchstart', onI3DClick);
 
+            // Efecto de desvanecimiento del preloader
             setTimeout(() => {
                 gsap.to("#preloader", { opacity: 0, duration: 1.5, onComplete: () => document.getElementById("preloader").style.display = "none" });
             }, 2500);
+
+            // Pre-calentamiento en caso de soporte Nativo Web
+            setTimeout(() => {
+                try {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+                    }
+                } catch(e) {}
+            }, 1000);
 
             animate();
         }
@@ -409,51 +405,85 @@
             if (currentSkinIndex === -1) return;
             const btn = document.getElementById('tts-btn');
 
-            // 1. Blindaje Inicial de WebView
-            if (!('speechSynthesis' in window)) {
-                btn.innerHTML = '>[ERROR] API DE VOZ NO SOPORTADA';
+            // 1. Apagado maestro de cualquier motor activo
+            if (window.currentAudio && !window.currentAudio.paused) {
+                window.currentAudio.pause();
+                window.currentAudio = null;
+                btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
                 return;
             }
-
-            const synth = window.speechSynthesis;
-            
             try {
-                // 2. Interrupción segura
-                if (synth.speaking || synth.pending) {
-                    synth.cancel();
+                if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
                     btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
-                } else {
-                    // 3. Compilación de Payload
-                    const skin = SKINS[currentSkinIndex];
-                    const textToRead = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}. Habilidad principal: ${skin.skill}. Punto de enfoque físico: ${skin.hardware}. Análisis táctico: ${skin.analysis}. Instrucción de Booteo: ${skin.boot}. Mantra de ejecución: ${skin.mantra}.`;
-                    
-                    window.currentUtterance = new SpeechSynthesisUtterance(textToRead);
-                    window.currentUtterance.lang = 'es-ES';
-                    window.currentUtterance.rate = 0.85; // Frecuencia Lenta / Calmada
-                    window.currentUtterance.pitch = 0.8; // Tono balanceado y profundo
+                    return;
+                }
+            } catch(e) {}
 
-                    // 4. Selección de Voces (Preferencia masculina profunda si existe)
-                    const voices = synth.getVoices();
-                    if(voices.length > 0) {
-                        const esVoices = voices.filter(v => v.lang.startsWith('es'));
-                        const preferredVoice = esVoices.find(v => v.name.toLowerCase().includes('male') || v.name.includes('Google')) || esVoices[0] || voices[0];
-                        window.currentUtterance.voice = preferredVoice;
+            btn.innerHTML = '&#9632; DETENER REPRODUCCIÓN';
+            const skin = SKINS[currentSkinIndex];
+            const rawText = `Secuencia de activación para ${skin.name}. Cultura base: ${skin.culture}. Habilidad principal: ${skin.skill}. Punto de enfoque físico: ${skin.hardware}. Análisis táctico: ${skin.analysis}. Instrucción de Booteo: ${skin.boot}. Mantra de ejecución: ${skin.mantra}.`;
+
+            // 2. Detector Analítico de Motor Nativo
+            let nativeSupported = false;
+            if ('speechSynthesis' in window) {
+                if (window.speechSynthesis.getVoices().length > 0) {
+                    nativeSupported = true;
+                }
+            }
+
+            // 3. Enrutamiento Condicional
+            if (nativeSupported) {
+                // EJECUCIÓN NATIVA
+                try {
+                    window.currentUtterance = new SpeechSynthesisUtterance(rawText);
+                    window.currentUtterance.lang = 'es-ES';
+                    window.currentUtterance.rate = 0.85; 
+                    window.currentUtterance.pitch = 0.6; 
+
+                    const voices = window.speechSynthesis.getVoices();
+                    const esVoices = voices.filter(v => v.lang.startsWith('es'));
+                    const preferredVoice = esVoices.find(v => v.name.toLowerCase().includes('male') || v.name.includes('Google')) || esVoices[0] || voices[0];
+                    if (preferredVoice) window.currentUtterance.voice = preferredVoice;
+                    
+                    window.currentUtterance.onend = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
+                    window.currentUtterance.onerror = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
+                    
+                    window.speechSynthesis.speak(window.currentUtterance);
+                } catch(e) {
+                    console.error("Fallo Nativo:", e);
+                }
+            } else {
+                // EJECUCIÓN BYPASS HTML5 (Android WebView / APK)
+                const cleanText = rawText.replace(/[\n\r]/g, ' ').replace(/\s{2,}/g, ' ');
+                const chunks = cleanText.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g).filter(s => s.trim().length > 0);
+                
+                let chunkIndex = 0;
+                window.currentAudio = new Audio();
+                window.currentAudio.playbackRate = 0.85; 
+
+                const playNextChunk = () => {
+                    if (chunkIndex >= chunks.length) {
+                        btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+                        window.currentAudio = null;
+                        return;
                     }
                     
-                    // 5. Controladores de Evento
-                    window.currentUtterance.onend = () => { btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN'; };
-                    window.currentUtterance.onerror = (e) => { 
-                        console.warn("TTS Error:", e); 
-                        btn.innerHTML = '&#9658; REINTENTAR REPRODUCCIÓN'; 
-                    };
+                    const payload = encodeURIComponent(chunks[chunkIndex].trim());
+                    const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=es&q=${payload}`;
                     
-                    // 6. Ejecución Activa
-                    synth.speak(window.currentUtterance);
-                    btn.innerHTML = '&#9632; DETENER REPRODUCCIÓN';
-                }
-            } catch(e) {
-                console.error("Fallo crítico en TTS:", e);
-                btn.innerHTML = '>[ERROR] FALLO DE EJECUCIÓN';
+                    window.currentAudio.src = url;
+                    window.currentAudio.play().catch(e => {
+                        console.error("Audio Fallback Blocked:", e);
+                        btn.innerHTML = '>[ERROR] REPRODUCCIÓN BLOQUEADA';
+                    });
+                    
+                    window.currentAudio.onended = () => {
+                        chunkIndex++;
+                        playNextChunk();
+                    };
+                };
+                playNextChunk();
             }
         }
 
@@ -465,13 +495,20 @@
 
             if(isMobile) document.getElementById('sidebar').classList.remove('active');
 
-            // Blindaje de Corte de Audio (Tratando de mitigar crashes de Android)
-            try {
-                if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-                    window.speechSynthesis.cancel();
-                }
-            } catch(e) { console.warn("TTS Cancelation Bypassed", e); }
-            document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+            // BLINDAJE EXTREMO: Interrupción Dual de Flujo de Audio
+            setTimeout(() => {
+                try {
+                    if (window.currentAudio && !window.currentAudio.paused) {
+                        window.currentAudio.pause();
+                        window.currentAudio = null;
+                    }
+                    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                    }
+                    const btn = document.getElementById('tts-btn');
+                    if (btn) btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+                } catch(e) {}
+            }, 10);
 
             nodes.forEach((n, i) => {
                 const isTarget = (i === index);
@@ -513,13 +550,20 @@
         }
 
         function resetView() {
-            // Blindaje de Corte de Audio 
-            try {
-                if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-                    window.speechSynthesis.cancel();
-                }
-            } catch(e) {}
-            document.getElementById('tts-btn').innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+            // BLINDAJE EXTREMO: Interrupción Dual de Flujo de Audio
+            setTimeout(() => {
+                try {
+                    if (window.currentAudio && !window.currentAudio.paused) {
+                        window.currentAudio.pause();
+                        window.currentAudio = null;
+                    }
+                    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                    }
+                    const btn = document.getElementById('tts-btn');
+                    if (btn) btn.innerHTML = '&#9658; INICIAR REPRODUCCIÓN';
+                } catch(e) {}
+            }, 10);
 
             isAutoRotating = true;
             currentSkinIndex = -1;
